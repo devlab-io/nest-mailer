@@ -89,6 +89,196 @@ Since this is a private package, you need to configure authentication:
 	- Choisir le repository à ajouter
 	- Cliquer sur "Add Repository"
 
+### Dockerfile du projet utilisant la bibliothèque
+
+Pour utiliser cette bibliothèque dans un projet Docker, vous devez configurer l'authentification GitHub Packages avec des secrets Docker. Voici comment procéder :
+
+**Étape 1 : Créer un Dockerfile avec secrets**
+
+	Créez un `Dockerfile` qui utilise les secrets Docker pour configurer l'authentification :
+	```dockerfile
+	FROM node:20-alpine AS builder
+
+	# Définir le répertoire de travail
+	WORKDIR /app
+
+	# Configurer .npmrc avec le secret GitHub Token
+	RUN --mount=type=secret,id=GITHUB_TOKEN \
+		if [ -f /run/secrets/GITHUB_TOKEN ]; then \
+		GITHUB_TOKEN=$(cat /run/secrets/GITHUB_TOKEN) && \
+		echo "@devlab-io:registry=https://npm.pkg.github.com" > .npmrc && \
+		echo "//npm.pkg.github.com/:_authToken=$GITHUB_TOKEN" >> .npmrc; \
+		fi
+
+	# Copier les fichiers de configuration
+	COPY package.json yarn.lock ./
+
+	# Installer les dépendances
+	RUN yarn install --frozen-lockfile
+
+	# Copier le reste du code
+	COPY . .
+
+	# Build de l'application
+	RUN yarn build
+
+	# Stage de production
+	FROM node:20-alpine AS production
+
+	WORKDIR /app
+
+	# Recréer .npmrc avec le secret pour les dépendances de production
+	RUN --mount=type=secret,id=GITHUB_TOKEN \
+		if [ -f /run/secrets/GITHUB_TOKEN ]; then \
+		GITHUB_TOKEN=$(cat /run/secrets/GITHUB_TOKEN) && \
+		echo "@devlab-io:registry=https://npm.pkg.github.com" > .npmrc && \
+		echo "//npm.pkg.github.com/:_authToken=$GITHUB_TOKEN" >> .npmrc; \
+		fi
+
+	# Copier les fichiers nécessaires
+	COPY package.json yarn.lock ./
+	COPY --from=builder /app/dist ./dist
+
+	# Installer uniquement les dépendances de production
+	RUN yarn install --frozen-lockfile --production
+
+	# Supprimer .npmrc après installation (sécurité)
+	RUN rm -f .npmrc
+
+	# Exposer le port
+	EXPOSE 3000
+
+	# Lancer l'application
+	CMD ["node", "dist/main.js"]
+	```
+
+**Étape 2 : Créer un fichier `.dockerignore`**
+
+	Créez un `.dockerignore` pour exclure les fichiers inutiles :
+	```
+	node_modules
+	dist
+	.git
+	.env
+	.env.local
+	coverage
+	*.log
+	```
+
+**Étape 3 : Utiliser Docker Build avec secrets**
+
+	Pour passer le token GitHub de manière sécurisée, utilisez les secrets Docker :
+
+	```bash
+	# Build avec secret depuis une variable d'environnement
+	export GITHUB_TOKEN=ghp_xxxxxxxxxxxxx
+	docker build \
+		--secret id=GITHUB_TOKEN,env=GITHUB_TOKEN \
+		-t my-app:latest .
+	```
+
+Ou avec un fichier de secret :
+	```bash
+	# Créer un fichier secret.txt avec votre token
+	echo "ghp_xxxxxxxxxxxxx" > secret.txt
+
+	# Build en utilisant le fichier secret
+	docker build \
+		--secret id=GITHUB_TOKEN,src=secret.txt \
+		-t my-app:latest .
+
+	# Nettoyer le fichier secret après le build
+	rm secret.txt
+	```
+
+Ou depuis un fichier `.env` :
+	```bash
+	# Créer un fichier .env avec votre token
+	# GITHUB_TOKEN=ghp_xxxxxxxxxxxxx
+
+	# Build en lisant depuis .env
+	export $(grep -v '^#' .env | xargs)
+	docker build \
+		--secret id=GITHUB_TOKEN,env=GITHUB_TOKEN \
+		-t my-app:latest .
+	```
+
+**Étape 4 : Configuration Docker Compose**
+
+	Créez un `docker-compose.yml` :
+
+	```yaml
+	version: '3.8'
+
+	services:
+		app:
+		build:
+			context: .
+			secrets:
+			- GITHUB_TOKEN
+		environment:
+			# Variables d'environnement pour le mailer
+			RESEND_API_KEY: ${RESEND_API_KEY}
+			# OU pour SMTP
+			SMTP_HOST: ${SMTP_HOST:-localhost}
+			SMTP_PORT: ${SMTP_PORT:-2500}
+			SMTP_SECURE: ${SMTP_SECURE:-false}
+			SMTP_IGNORE_TLS: ${SMTP_IGNORE_TLS:-true}
+			SMTP_USER: ${SMTP_USER:-}
+			SMTP_PASS: ${SMTP_PASS:-}
+			EMAIL_FROM: ${EMAIL_FROM:-no-reply@example.com}
+		ports:
+			- "3000:3000"
+
+	secrets:
+		GITHUB_TOKEN:
+		environment: GITHUB_TOKEN
+	```
+
+**Étape 5 : Créer un fichier `.env` pour Docker Compose**
+
+	Créez un `.env` à la racine de votre projet :
+	```env
+	# GitHub Packages Token
+	GITHUB_TOKEN=ghp_xxxxxxxxxxxxx
+
+	# Mailer Configuration (Resend)
+	RESEND_API_KEY=re_xxxxxxxxxxxxx
+	EMAIL_FROM=noreply@example.com
+
+	# OU Mailer Configuration (SMTP)
+	# SMTP_HOST=smtp.example.com
+	# SMTP_PORT=587
+	# SMTP_SECURE=false
+	# SMTP_IGNORE_TLS=false
+	# SMTP_USER=user@example.com
+	# SMTP_PASS=password123
+	# EMAIL_FROM=noreply@example.com
+	```
+
+**Étape 6 : Lancer avec Docker Compose**
+
+	```bash
+	# Lancer le service
+	docker-compose up -d
+
+	# Voir les logs
+	docker-compose logs -f app
+
+	# Arrêter le service
+	docker-compose down
+	```
+
+**Notes importantes :**
+
+	- ⚠️ **Ne commitez jamais** votre fichier `.env` avec les tokens
+	- ⚠️ **Ne commitez jamais** de fichiers contenant des tokens (secret.txt, etc.)
+	- ✅ Utilisez les secrets Docker (`--mount=type=secret`) pour une sécurité maximale
+	- ✅ Les secrets ne sont jamais inclus dans l'image finale
+	- ✅ Ajoutez `.env` et `secret.txt` à votre `.gitignore`
+	- ✅ Pour la production, utilisez un gestionnaire de secrets (AWS Secrets Manager, HashiCorp Vault, etc.)
+
+
 ## Usage
 
 ### Basic Setup
