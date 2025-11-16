@@ -58,12 +58,18 @@
     "@nestjs/common": "^11.1.8",
     "@nestjs/core": "^11.1.8"
   },
-  "publishConfig": {
-    "registry": "https://npm.pkg.github.com"
-  },
   "peerDependenciesMeta": {
     "@nestjs/core": {
       "optional": false
+    },
+    "react": {
+      "optional": true
+    },
+    "react-dom": {
+      "optional": true
     }
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
   }
 }
