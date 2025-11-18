@@ -42,16 +42,8 @@ describe('SmtpMailerService', () => {
     it('should create instance with valid SMTP config', () => {
       service = new SmtpMailerService(mockMailerConfig);
       expect(service).toBeDefined();
-      expect(createTransport).toHaveBeenCalledWith({
-        host: 'smtp.example.com',
-        port: 587,
-        secure: false,
-        ignoreTLS: false,
-        auth: {
-          user: 'user@example.com',
-          pass: 'password',
-        },
-      });
+      // createTransport is called lazily, not in constructor
+      expect(createTransport).not.toHaveBeenCalled();
     });
 
     it('should throw error if SMTP config is missing', () => {
@@ -123,7 +115,7 @@ describe('SmtpMailerService', () => {
       );
     });
 
-    it('should create transporter without auth when auth is not provided', () => {
+    it('should create transporter without auth when auth is not provided', async () => {
       const configWithoutAuth: MailerConfig = {
         smtp: {
           host: 'smtp.example.com',
@@ -136,6 +128,9 @@ describe('SmtpMailerService', () => {
         },
       };
       service = new SmtpMailerService(configWithoutAuth);
+      // Trigger initialization by calling send
+      mockSendMail.mockResolvedValueOnce({ messageId: 'test-id' });
+      await service.send('test@example.com', 'Test', 'Body');
       expect(createTransport).toHaveBeenCalledWith({
         host: 'smtp.example.com',
         port: 587,
@@ -156,6 +151,17 @@ describe('SmtpMailerService', () => {
 
       await service.send('recipient@example.com', 'Test Subject', 'Test Body');
 
+      // Verify createTransport was called with correct config
+      expect(createTransport).toHaveBeenCalledWith({
+        host: 'smtp.example.com',
+        port: 587,
+        secure: false,
+        ignoreTLS: false,
+        auth: {
+          user: 'user@example.com',
+          pass: 'password',
+        },
+      });
       expect(mockSendMail).toHaveBeenCalledWith({
         from: 'test@example.com',
         to: 'recipient@example.com',

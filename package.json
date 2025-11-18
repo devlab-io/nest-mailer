@@ -28,6 +28,8 @@
   },
   "dependencies": {
     "@nestjs/common": "^11.1.8",
+    "nodemailer": "^6.9.8",
+    "resend": "^3.2.0",
     "zod": "^3.25.76"
   },
   "devDependencies": {
@@ -38,6 +40,8 @@
     "@types/jest": "^29.5.14",
     "@types/node": "^20.19.25",
     "@types/nodemailer": "^6.4.14",
+    "nodemailer": "^6.9.8",
+    "resend": "^3.2.0",
     "@typescript-eslint/eslint-plugin": "^8.18.2",
     "@typescript-eslint/parser": "^8.18.2",
     "eslint": "^8.57.1",
@@ -54,19 +58,11 @@
   },
   "peerDependencies": {
     "@nestjs/common": "^11.1.8",
-    "@nestjs/core": "^11.1.8",
-    "nodemailer": "^6.9.8",
-    "resend": "^3.2.0"
+    "@nestjs/core": "^11.1.8"
   },
   "peerDependenciesMeta": {
     "@nestjs/core": {
       "optional": false
-    },
-    "nodemailer": {
-      "optional": true
-    },
-    "resend": {
-      "optional": true
     },
     "react": {
       "optional": true
