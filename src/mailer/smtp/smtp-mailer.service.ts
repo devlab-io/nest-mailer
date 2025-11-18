@@ -1,5 +1,4 @@
 import { InternalServerErrorException, Logger } from '@nestjs/common';
-import { Transporter, createTransport } from 'nodemailer';
 import { MailerConfig } from '../config/mailer.config';
 import { MailerService } from '../mailer.service';
 
@@ -25,7 +24,7 @@ import { MailerService } from '../mailer.service';
 export class SmtpMailerService implements MailerService {
   private readonly logger = new Logger(SmtpMailerService.name);
   private readonly config: MailerConfig;
-  private readonly transporter: Transporter;
+  private transporter: any;
 
   /**
    * Creates a new instance of SmtpMailerService.
@@ -45,15 +44,24 @@ export class SmtpMailerService implements MailerService {
     if (this.config.smtp.ignoreTLS) {
       this.logger.warn('You are not using TLS certificate with the SMTP');
     }
-
-    this.transporter = createTransport({
-      host: this.config.smtp.host,
-      port: this.config.smtp.port,
-      secure: this.config.smtp.secure,
-      ignoreTLS: this.config.smtp.ignoreTLS,
-      auth: this.config.smtp.auth,
-    });
     this.logger.log('Using Smtp Mailer');
+  }
+
+  /**
+   * Initializes the SMTP transporter with lazy import.
+   * This prevents nodemailer from being loaded when not using SMTP.
+   */
+  private async initializeTransporter(): Promise<void> {
+    if (!this.transporter) {
+      const { createTransport } = await import('nodemailer');
+      this.transporter = createTransport({
+        host: this.config.smtp!.host,
+        port: this.config.smtp!.port,
+        secure: this.config.smtp!.secure,
+        ignoreTLS: this.config.smtp!.ignoreTLS,
+        auth: this.config.smtp!.auth,
+      });
+    }
   }
 
   /**
@@ -66,6 +74,11 @@ export class SmtpMailerService implements MailerService {
    * @throws {InternalServerErrorException} When the email fails to send
    */
   async send(to: string, subject: string, text: string) {
+    // Ensure transporter is initialized
+    if (!this.transporter) {
+      await this.initializeTransporter();
+    }
+
     // TODO : save mail in database
     try {
       await this.transporter.sendMail({

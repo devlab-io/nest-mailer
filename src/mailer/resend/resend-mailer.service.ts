@@ -1,5 +1,4 @@
 import { InternalServerErrorException, Logger } from '@nestjs/common';
-import { Resend } from 'resend';
 import { MailerConfig } from '../config/mailer.config';
 import { MailerService } from '../mailer.service';
 
@@ -18,7 +17,7 @@ import { MailerService } from '../mailer.service';
  */
 export class ResendMailerService implements MailerService {
   private readonly logger = new Logger(ResendMailerService.name);
-  private readonly resend: Resend;
+  private resend: any;
   private readonly config: MailerConfig;
 
   /**
@@ -32,8 +31,18 @@ export class ResendMailerService implements MailerService {
     if (!this.config.resend?.apiKey) {
       throw new Error('Resend API key is required for ResendMailerService');
     }
-    this.resend = new Resend(this.config.resend.apiKey);
     this.logger.log('Using Resend Mailer');
+  }
+
+  /**
+   * Initializes the Resend client with lazy import.
+   * This prevents react-dom/server from being loaded when using SMTP.
+   */
+  private async initializeResend(): Promise<void> {
+    if (!this.resend) {
+      const { Resend } = await import('resend');
+      this.resend = new Resend(this.config.resend!.apiKey);
+    }
   }
 
   /**
@@ -46,6 +55,11 @@ export class ResendMailerService implements MailerService {
    * @throws {InternalServerErrorException} When the email fails to send
    */
   async send(to: string, subject: string, text: string): Promise<void> {
+    // Ensure Resend is initialized
+    if (!this.resend) {
+      await this.initializeResend();
+    }
+
     try {
       await this.resend.emails.send({
         from: this.config.mailer.from,

@@ -16,6 +16,11 @@ NestJS module providing email sending services using Resend or SMTP.
 This package is distributed via GitHub Packages (private npm registry).
 Install it using npm or yarn.
 
+**Important:** This package uses optional peer dependencies. You must install the provider you want to use:
+
+- For **Resend**: Install `resend`
+- For **SMTP**: Install `nodemailer` and `@types/nodemailer`
+
 ### Authentication to Github Packages
 
 Since this is a private package, you need to configure authentication:
@@ -61,19 +66,39 @@ Since this is a private package, you need to configure authentication:
 
 	Using npm:
 	```bash
+	# Install the package
 	npm install @devlab-io/nest-mailer
+
+	# Install the provider you want to use (choose one or both):
+	# For Resend
+	npm install resend
+
+	# For SMTP
+	npm install nodemailer @types/nodemailer
 	```
 
 	Using yarn:
 	```bash
+	# Install the package
 	yarn add @devlab-io/nest-mailer
+
+	# Install the provider you want to use (choose one or both):
+	# For Resend
+	yarn add resend
+
+	# For SMTP
+	yarn add nodemailer @types/nodemailer
 	```
 
 	Or add directly in `package.json`:
 	```json
 	{
 		"dependencies": {
-			"@devlab-io/nest-mailer": "^1.0.0"
+			"@devlab-io/nest-mailer": "^1.0.0",
+			"resend": "^3.2.0"
+			// OR
+			"nodemailer": "^6.9.8",
+			"@types/nodemailer": "^6.4.14"
 		}
 	}
 	```
