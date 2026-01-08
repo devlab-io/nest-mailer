@@ -1,6 +1,6 @@
 {
   "name": "@devlab-io/nest-mailer",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "NestJS module allowing to send emails using Resend or SMTP",
   "author": "DevLab",
   "license": "UNLICENSED",
