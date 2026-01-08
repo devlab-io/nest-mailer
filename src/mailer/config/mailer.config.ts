@@ -80,6 +80,35 @@ export interface MailerConfig extends ResendConfig, SmtpConfig {
 export const MailerConfigToken = Symbol('MailerConfig');
 
 /**
+ * Custom Zod transform to convert string values to boolean.
+ * Converts "true", "yes", "1" (case-insensitive) to true
+ * Converts "false", "no", "0" (case-insensitive) to false
+ * Handles undefined values (will use default from schema)
+ */
+const booleanFromString = z
+  .union([z.boolean(), z.string(), z.number(), z.undefined()])
+  .transform((val: boolean | string | number | undefined) => {
+    if (val === undefined) {
+      return undefined; // Let Zod apply the default
+    }
+    if (typeof val === 'boolean') {
+      return val;
+    }
+    if (typeof val === 'number') {
+      return val > 0;
+    }
+    const lowerVal = val.toLowerCase().trim();
+    if (['true', 'yes', '1'].includes(lowerVal)) {
+      return true;
+    }
+    if (['false', 'no', '0'].includes(lowerVal)) {
+      return false;
+    }
+    // Default to false for unrecognized values
+    return false;
+  });
+
+/**
  * Zod schema for validating environment variables.
  * Defines the structure and defaults for mailer configuration from environment.
  */
@@ -89,8 +118,8 @@ export const mailerConfigSchema = z.object({
   // SMTP
   SMTP_HOST: z.string().default('localhost'),
   SMTP_PORT: z.string().default('2500'),
-  SMTP_SECURE: z.boolean().default(false),
-  SMTP_IGNORE_TLS: z.boolean().default(true),
+  SMTP_SECURE: booleanFromString.default(false),
+  SMTP_IGNORE_TLS: booleanFromString.default(true),
   SMTP_USER: z.string().optional(),
   SMTP_PASS: z.string().optional(),
   // Common

@@ -45,8 +45,8 @@ describe('mailer.config', () => {
       const env = {
         SMTP_HOST: 'smtp.example.com',
         SMTP_PORT: '587',
-        SMTP_SECURE: true,
-        SMTP_IGNORE_TLS: false,
+        SMTP_SECURE: 'true',
+        SMTP_IGNORE_TLS: 'false',
         SMTP_USER: 'user@example.com',
         SMTP_PASS: 'password123',
         EMAIL_FROM: 'test@example.com',
@@ -60,6 +60,147 @@ describe('mailer.config', () => {
       expect(result.SMTP_IGNORE_TLS).toBe(false);
       expect(result.SMTP_USER).toBe('user@example.com');
       expect(result.SMTP_PASS).toBe('password123');
+    });
+
+    it('should convert string booleans to boolean values', () => {
+      const env = {
+        SMTP_SECURE: 'true',
+        SMTP_IGNORE_TLS: 'false',
+        EMAIL_FROM: 'test@example.com',
+      };
+
+      const result = mailerConfigSchema.parse(env);
+
+      expect(result.SMTP_SECURE).toBe(true);
+      expect(result.SMTP_IGNORE_TLS).toBe(false);
+    });
+
+    it('should handle case-insensitive boolean strings', () => {
+      const testCases = [
+        { input: 'TRUE', expected: true },
+        { input: 'True', expected: true },
+        { input: 'true', expected: true },
+        { input: 'YES', expected: true },
+        { input: 'Yes', expected: true },
+        { input: 'yes', expected: true },
+        { input: '1', expected: true },
+        { input: 'FALSE', expected: false },
+        { input: 'False', expected: false },
+        { input: 'false', expected: false },
+        { input: 'NO', expected: false },
+        { input: 'No', expected: false },
+        { input: 'no', expected: false },
+        { input: '0', expected: false },
+      ];
+
+      testCases.forEach(({ input, expected }) => {
+        const env = {
+          SMTP_SECURE: input,
+          SMTP_IGNORE_TLS: input,
+          EMAIL_FROM: 'test@example.com',
+        };
+
+        const result = mailerConfigSchema.parse(env);
+        expect(result.SMTP_SECURE).toBe(expected);
+        expect(result.SMTP_IGNORE_TLS).toBe(expected);
+      });
+    });
+
+    it('should handle boolean values directly', () => {
+      const env = {
+        SMTP_SECURE: true,
+        SMTP_IGNORE_TLS: false,
+        EMAIL_FROM: 'test@example.com',
+      };
+
+      const result = mailerConfigSchema.parse(env);
+
+      expect(result.SMTP_SECURE).toBe(true);
+      expect(result.SMTP_IGNORE_TLS).toBe(false);
+    });
+
+    it('should use default values when SMTP_SECURE is undefined', () => {
+      const env = {
+        EMAIL_FROM: 'test@example.com',
+      };
+
+      const result = mailerConfigSchema.parse(env);
+
+      expect(result.SMTP_SECURE).toBe(false);
+    });
+
+    it('should use default values when SMTP_IGNORE_TLS is undefined', () => {
+      const env = {
+        EMAIL_FROM: 'test@example.com',
+      };
+
+      const result = mailerConfigSchema.parse(env);
+
+      expect(result.SMTP_IGNORE_TLS).toBe(true);
+    });
+
+    it('should use default values when both SMTP_SECURE and SMTP_IGNORE_TLS are undefined', () => {
+      const env = {
+        EMAIL_FROM: 'test@example.com',
+      };
+
+      const result = mailerConfigSchema.parse(env);
+
+      expect(result.SMTP_SECURE).toBe(false);
+      expect(result.SMTP_IGNORE_TLS).toBe(true);
+    });
+
+    it('should handle empty string as undefined and use defaults', () => {
+      const env = {
+        SMTP_SECURE: '',
+        SMTP_IGNORE_TLS: '',
+        EMAIL_FROM: 'test@example.com',
+      };
+
+      const result = mailerConfigSchema.parse(env);
+
+      // Empty string should be converted to false
+      expect(result.SMTP_SECURE).toBe(false);
+      expect(result.SMTP_IGNORE_TLS).toBe(false);
+    });
+
+    it('should handle undefined values explicitly', () => {
+      const env = {
+        SMTP_SECURE: undefined,
+        SMTP_IGNORE_TLS: undefined,
+        EMAIL_FROM: 'test@example.com',
+      };
+
+      const result = mailerConfigSchema.parse(env);
+
+      expect(result.SMTP_SECURE).toBe(false);
+      expect(result.SMTP_IGNORE_TLS).toBe(true);
+    });
+
+    it('should handle when only SMTP_SECURE is undefined', () => {
+      const env = {
+        SMTP_SECURE: undefined,
+        SMTP_IGNORE_TLS: 'false',
+        EMAIL_FROM: 'test@example.com',
+      };
+
+      const result = mailerConfigSchema.parse(env);
+
+      expect(result.SMTP_SECURE).toBe(false);
+      expect(result.SMTP_IGNORE_TLS).toBe(false);
+    });
+
+    it('should handle when only SMTP_IGNORE_TLS is undefined', () => {
+      const env = {
+        SMTP_SECURE: 'true',
+        SMTP_IGNORE_TLS: undefined,
+        EMAIL_FROM: 'test@example.com',
+      };
+
+      const result = mailerConfigSchema.parse(env);
+
+      expect(result.SMTP_SECURE).toBe(true);
+      expect(result.SMTP_IGNORE_TLS).toBe(true);
     });
   });
 

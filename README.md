@@ -14,7 +14,7 @@ NestJS module providing email sending services using Resend or SMTP.
 ## Installation
 
 This package is distributed via GitHub Packages (private npm registry).
-Install it using npm or yarn.
+Install it using pnpm.
 
 ### Authentication to Github Packages
 
@@ -26,7 +26,7 @@ Since this is a private package, you need to configure authentication:
 		- `read:packages` - to download packages
 		- `repo` - if the repository is private
 
-2. **Configure npm/yarn to use GitHub Packages**:
+2. **Configure pnpm to use GitHub Packages**:
 
 	Create or edit `.npmrc` file in your project root (or `~/.npmrc` for global configuration):
 	```ini
@@ -36,13 +36,9 @@ Since this is a private package, you need to configure authentication:
 
 	Or configure via command line:
 	```bash
-	# For npm
-	npm config set @devlab-io:registry https://npm.pkg.github.com
-	npm config set //npm.pkg.github.com/:_authToken YOUR_GITHUB_TOKEN
-
-	# For yarn
-	yarn config set @devlab-io:registry https://npm.pkg.github.com
-	yarn config set //npm.pkg.github.com/:_authToken YOUR_GITHUB_TOKEN
+	# For pnpm
+	pnpm config set @devlab-io:registry https://npm.pkg.github.com
+	pnpm config set //npm.pkg.github.com/:_authToken YOUR_GITHUB_TOKEN
 	```
 
 	Using environment variable (recommended for CI/CD):
@@ -59,30 +55,17 @@ Since this is a private package, you need to configure authentication:
 
 3. **Install the Package**:
 
-	Using npm:
+	Using pnpm:
 	```bash
 	# Install the package
-	npm install @devlab-io/nest-mailer
+	pnpm add @devlab-io/nest-mailer
 
 	# Install the provider you want to use (choose one or both):
 	# For Resend
-	npm install resend
+	pnpm add resend
 
 	# For SMTP
-	npm install nodemailer @types/nodemailer
-	```
-
-	Using yarn:
-	```bash
-	# Install the package
-	yarn add @devlab-io/nest-mailer
-
-	# Install the provider you want to use (choose one or both):
-	# For Resend
-	yarn add resend
-
-	# For SMTP
-	yarn add nodemailer @types/nodemailer
+	pnpm add nodemailer @types/nodemailer
 	```
 
 	Or add directly in `package.json`:
@@ -131,16 +114,19 @@ Pour utiliser cette bibliothèque dans un projet Docker, vous devez configurer l
 		fi
 
 	# Copier les fichiers de configuration
-	COPY package.json yarn.lock ./
+	COPY package.json pnpm-lock.yaml ./
+
+	# Installer pnpm
+	RUN corepack enable && corepack prepare pnpm@latest --activate
 
 	# Installer les dépendances
-	RUN yarn install --frozen-lockfile
+	RUN pnpm install --frozen-lockfile
 
 	# Copier le reste du code
 	COPY . .
 
 	# Build de l'application
-	RUN yarn build
+	RUN pnpm build
 
 	# Stage de production
 	FROM node:20-alpine AS production
@@ -155,12 +141,15 @@ Pour utiliser cette bibliothèque dans un projet Docker, vous devez configurer l
 		echo "//npm.pkg.github.com/:_authToken=$GITHUB_TOKEN" >> .npmrc; \
 		fi
 
+	# Installer pnpm
+	RUN corepack enable && corepack prepare pnpm@latest --activate
+
 	# Copier les fichiers nécessaires
-	COPY package.json yarn.lock ./
+	COPY package.json pnpm-lock.yaml ./
 	COPY --from=builder /app/dist ./dist
 
 	# Installer uniquement les dépendances de production
-	RUN yarn install --frozen-lockfile --production
+	RUN pnpm install --frozen-lockfile --prod
 
 	# Supprimer .npmrc après installation (sécurité)
 	RUN rm -f .npmrc
@@ -433,19 +422,19 @@ interface MailerConfig {
 
 ```bash
 # Install dependencies
-yarn install
+pnpm install
 
 # Build
-yarn run build
+pnpm run build
 
 # Type check
-yarn run type-check
+pnpm run type-check
 
 # Format code
-yarn run format
+pnpm run format
 
 # Lint
-yarn run lint
+pnpm run lint
 ```
 
 ## Publishing

@@ -39,12 +39,18 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           registry-url: 'https://npm.pkg.github.com'
           scope: '@devlab-io'
+          cache: 'pnpm'
 
       - name: Extract version number
         id: version
@@ -69,30 +75,30 @@ jobs:
           git push origin main
 
       - name: Install dependencies
-        run: yarn install --frozen-lockfile
+        run: pnpm install --frozen-lockfile
 
       - name: Build package
-        run: yarn build
+        run: pnpm build
 
       - name: Check code formatting
-        run: yarn format:check
+        run: pnpm format:check
 
       - name: Run linter
-        run: yarn lint:check
+        run: pnpm lint:check
 
       - name: Type check
-        run: yarn type-check
+        run: pnpm type-check
 
       - name: Run tests
-        run: yarn test
+        run: pnpm test
 
       - name: Update version in package.json
         run: |
-          npm version ${{ steps.version.outputs.version }} --no-git-tag-version
+          pnpm version ${{ steps.version.outputs.version }} --no-git-tag
 
       - name: Commit and push version update
         run: |
-          git add package.json package-lock.json 2>/dev/null || git add package.json
+          git add package.json pnpm-lock.yaml 2>/dev/null || git add package.json
           git commit -m "chore: bump version to ${{ steps.version.outputs.version }}" || echo "No changes to commit"
           git push origin main
 
@@ -110,7 +116,7 @@ jobs:
       - name: Publish to GitHub Packages
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npm publish
+        run: pnpm publish --no-git-checks
 
       - name: Create GitHub Release with archive
         uses: softprops/action-gh-release@v1

@@ -1,0 +1,4 @@
+pnpm run type-check
+pnpm run format:check
+pnpm run lint:check
+pnpm run test
