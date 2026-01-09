@@ -54,6 +54,7 @@ export class MailerModule {
    */
   static forRoot(config?: Partial<MailerConfig>): DynamicModule {
     return {
+      global: true,
       module: MailerModule,
       imports: [],
       providers: [provideMailerConfig(config), provideMailerService()],
